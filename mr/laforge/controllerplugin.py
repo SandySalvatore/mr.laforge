@@ -1,7 +1,7 @@
 from supervisor.options import split_namespec
 from supervisor.supervisorctl import ControllerPluginBase
 from supervisor import xmlrpc
-import xmlrpclib
+import xmlrpc.client
 
 
 class LaForgeControllerPlugin(ControllerPluginBase):
@@ -52,7 +52,7 @@ class LaForgeControllerPlugin(ControllerPluginBase):
             else:
                 try:
                     result = self.laforge.killProcess(name, signal)
-                except xmlrpclib.Fault, e:
+                except xmlrpc.client.Fault as e:
                     error = self._killresult({'status':e.faultCode,
                                                'name':name,
                                                'description':e.faultString})

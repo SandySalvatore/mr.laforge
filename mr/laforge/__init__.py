@@ -6,7 +6,7 @@ import socket
 import subprocess
 import sys
 import time
-import xmlrpclib
+import xmlrpc.client
 
 
 def get_rpc(options):
@@ -14,7 +14,7 @@ def get_rpc(options):
         options.username,
         options.password,
         options.serverurl)
-    return xmlrpclib.ServerProxy('http://127.0.0.1', transport)
+    return xmlrpc.client.ServerProxy('http://127.0.0.1', transport)
 
 
 def find_supervisord():
@@ -25,7 +25,7 @@ def find_supervisord():
     supervisord = os.path.join(os.getcwd(), 'bin', 'supervisord')
     if os.path.exists(supervisord):
         return supervisord
-    print >> sys.stderr, "Couldn't find supervisord"
+    print("Couldn't find supervisord", file=sys.stderr)
     sys.exit(1)
 
 
@@ -58,7 +58,7 @@ def up(*args, **kwargs):
             if retcode != 0:
                 sys.exit(retcode)
             status = 'starting'
-        except xmlrpclib.Fault as e:
+        except xmlrpc.client.Fault as e:
             if e.faultString == 'SHUTDOWN_STATE':
                 if status == 'init':
                     sys.stderr.write("Supervisor currently shutting down ")
@@ -72,16 +72,16 @@ def up(*args, **kwargs):
         for name in args:
             info = rpc.supervisor.getProcessInfo(name)
             if info['statename'] != 'RUNNING':
-                print "Starting %s" % name
+                print("Starting %s" % name)
                 try:
                     rpc.supervisor.startProcess(name)
-                except xmlrpclib.Fault as e:
+                except xmlrpc.client.Fault as e:
                     if e.faultCode == 60:  # already started
                         continue
-                    print >> sys.stderr, e.faultCode, e.faultString
+                    print(e.faultCode, e.faultString, file=sys.stderr)
                     sys.exit(1)
             else:
-                print >> sys.stderr, "%s is already running" % name
+                print("%s is already running" % name, file=sys.stderr)
 
 
 def down(*args, **kwargs):
@@ -108,7 +108,7 @@ def down(*args, **kwargs):
             if retcode != 0:
                 sys.exit(retcode)
             status = 'starting'
-        except xmlrpclib.Fault as e:
+        except xmlrpc.client.Fault as e:
             if e.faultString == 'SHUTDOWN_STATE':
                 if status == 'init':
                     sys.stderr.write("Supervisor currently shutting down ")
@@ -122,16 +122,16 @@ def down(*args, **kwargs):
         for name in args:
             info = rpc.supervisor.getProcessInfo(name)
             if info['statename'] != 'STOPPED':
-                print "Stopping %s" % name
+                print("Stopping %s" % name)
                 try:
                     rpc.supervisor.stopProcess(name)
-                except xmlrpclib.Fault as e:
+                except xmlrpc.client.Fault as e:
                     # if e.faultCode == 60:  # already stopped
                     #     continue
-                    print >> sys.stderr, e.faultCode, e.faultString
+                    print(e.faultCode, e.faultString, file=sys.stderr)
                     sys.exit(1)
             else:
-                print >> sys.stderr, "%s is already stopped" % name
+                print("%s is already stopped" % name, file=sys.stderr)
 
 
 def shutdown(**kwargs):
@@ -141,12 +141,12 @@ def shutdown(**kwargs):
     try:
         rpc = get_rpc(options)
         rpc.supervisor.shutdown()
-        print >> sys.stderr, "Shutting down supervisor"
+        print("Shutting down supervisor", file=sys.stderr)
     except socket.error:
-        print >> sys.stderr, "Supervisor already shut down"
-    except xmlrpclib.Fault as e:
+        print("Supervisor already shut down", file=sys.stderr)
+    except xmlrpc.client.Fault as e:
         if e.faultString == 'SHUTDOWN_STATE':
-            print >> sys.stderr, "Supervisor already shutting down"
+            print("Supervisor already shutting down", file=sys.stderr)
 
 
 def waitforports(*args, **kwargs):
@@ -158,7 +158,7 @@ def waitforports(*args, **kwargs):
     parser.add_argument('-t', '--timeout', type=int, default=timeout)
     parser.add_argument('-H', '--default-host', default=default_host)
     parser.add_argument('ports', nargs='+')
-    args = parser.parse_args(map(str, args))
+    args = parser.parse_args(list(map(str, args)))
     default_ip = socket.gethostbyname(args.default_host)
     timeout = args.timeout
     ports = set()
